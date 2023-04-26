@@ -3,16 +3,12 @@
 #Load libraries
 library(anytime)
 library(readr)
-<<<<<<< HEAD
 library(dplyr)
 library(ggplot2)
-=======
-readfile <- read.csv("lsf.csv")
->>>>>>> 9b63dd9e7094058245276a1fccb48e9f53fa4397
+
 
 #Read in current version of LSF log files
 working_file <- read.csv("lsf_small.csv")
-
 
 
 working_file <-
@@ -57,11 +53,11 @@ cpus_per = cbind(cpus_per, cores_reserved)
 
 for (i in 1:nrow(working_file)){
   `%+=%` = function(e1,e2) eval.parent(substitute(e1 <- e1 + e2))
-<<<<<<< HEAD
+
   cpus_per$cores_reserved[cpus_per$second <= working_file[i, "Event.Time"] & cpus_per$second >= working_file[i, "startTime"]] %+=% 1
-=======
+
   cpus_per$cores_reserved[cpus_per$second <= readfile[i, "Event.Time"] & cpus_per$second >= readfile[i, "startTime"]] %+=% 1
->>>>>>> 9b63dd9e7094058245276a1fccb48e9f53fa4397
+
 }
 
 table(cpus_per$cores_reserved)
