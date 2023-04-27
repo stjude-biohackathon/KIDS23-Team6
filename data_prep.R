@@ -2,6 +2,7 @@
 
 #Load libraries
 library(anytime)
+library(lubridate)
 library(readr)
 library(dplyr)
 library(ggplot2)
@@ -10,20 +11,62 @@ library(ggplot2)
 #Read in current version of LSF log files
 working_file <- read.csv("lsf_small.csv")
 
-
+#Modify some time columns to be POSIXct format rather than Epoch time
 working_file <-
   working_file %>%
-  mutate("startTime2"=anytime(startTime),
-         "submitTime2"=anytime(submitTime),
-         "pendTime"=startTime-submitTime,
-         "endTime"=startTime2 + runTime,
-         "endTime2"=anytime(endTime))
+  mutate("pend_time"=startTime-submitTime,
+         "end_time"=anytime(startTime + runTime),
+         "start_time"=anytime(startTime),
+         "submit_time"=anytime(submitTime),
+         "event_time"=anytime(Event.Time))
+
+
+hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
+
+#Group by 1 hour intervals and queues, then count processors and memory used
+working_file %>%
+  mutate("interval"=cut(working_file$submit_time, breaks = seq(min(working_file$submit_time), max(working_file$end_time) + 3600, by = 3600)),
+         "hour"=hour(interval)) %>%
+  group_by(hour, queue) %>%
+  summarize(processors_used = sum(numProcessors),
+            mem_used = sum(maxRMem))
+
+
+hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
+test <- 
+  working_file %>%
+  mutate(hour = hour(event_time),
+         hour_block = case_when(hour == 0 ~ "00-01",
+                                TRUE ~ paste(sprintf("%02d", hour), sprintf("%02d", hour + 1), sep = "-"))) %>%
+  select(event_time, hour, hour_block, numProcessors, maxRMem, startTime, runTime) %>%
+  group_by(hour_block) %>%
+  mutate("cpus_by_hour"=sum(numProcessors)) %>%
+  ungroup()
+
+
+
+
+
+  group_by(hour_block) %>%
+  summarize(total_processors_used = sum(numProcessors)) %>%
+  right_join(data.frame(hour_block = hour_blocks), by = "hour_block") %>%
+  mutate(total_processors_used = ifelse(is.na(total_processors_used), 0, total_processors_used)) %>%
+  View()
+
+
+
+
+
+
+
+
+
 
 # group the jobs into 1 hour intervals and calculate the total number of processors used in each interval
 proc_df <-
   working_file %>%
   group_by(interval = cut(working_file$submitTime2, breaks = seq(min(working_file$submitTime2), max(working_file$endTime2) + 3600, by = 3600))) %>%
-  summarize(processors_used = sum(numProcessors)) 
+  summarize(processors_used = sum(numProcessors))
 
 proc_df %>%
   ggplot(aes(x=interval, y=processors_used)) +
