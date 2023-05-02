@@ -11,6 +11,9 @@ library(ggplot2)
 #Read in current version of LSF log files
 working_file <- read.csv("log_data/lsf_100k.csv")
 
+#Set working directory to appropriate location
+setwd("visualize/")
+
 #Define the 1-hour blocks which each time frame will be assigned to
 hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
 
@@ -67,7 +70,7 @@ p1 <-
         plot.subtitle = element_text(hjust=0.5)) +
   xlab("") +
   ylab("# CPU Processors")
-ggsave("plots/p1.svg", p1, width=5, height=5)
+ggsave("p1.svg", p1, width=5, height=5)
 
 
 #Plot total CPU usage by day
@@ -89,7 +92,7 @@ p2 <-
         legend.position="none") +
   xlab("") +
   ylab("# CPU Processors")
-ggsave("plots/p2.svg", p2, width=5, height=5)
+ggsave("p2.svg", p2, width=5, height=5)
 
 #Plot total CPU usage by queue
 p3 <- 
@@ -110,7 +113,7 @@ p3 <-
         legend.position="none") +
   ylab("") +
   xlab("# CPU Processors")
-ggsave("plots/p3.svg", p3, width=5, height=5)
+ggsave("p3.svg", p3, width=5, height=5)
 
 
 #Plot CPUs by each user (across all queues) 
@@ -129,7 +132,7 @@ p4 <-
   theme(panel.border=element_rect(fill=NA, color="black"),
         plot.title=element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5))
-ggsave("plots/p4.svg", p4, width=4.3, height=10.75)
+ggsave("p4.svg", p4, width=4.3, height=10.75)
 
 
 #Plot CPUs by each user (highlight the queues)
@@ -152,4 +155,4 @@ p5 <-
   theme(panel.border=element_rect(fill=NA, color="black"),
         plot.title=element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5))
-ggsave("plots/p5.svg", p5, width=6, height=10.75)
+ggsave("p5.svg", p5, width=6, height=10.75)
