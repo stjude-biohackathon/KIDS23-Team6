@@ -1,4 +1,4 @@
-#Some code to prepare the LSF logs
+#Prepare the LSF logs
 
 #Load libraries
 library(anytime)
@@ -9,7 +9,7 @@ library(ggplot2)
 
 
 #Read in current version of LSF log files
-working_file <- read.csv("lsf_10k.csv")
+working_file <- read.csv("lsf_100k.csv")
 
 #Define the 1-hour blocks which each time frame will be assigned to
 hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
