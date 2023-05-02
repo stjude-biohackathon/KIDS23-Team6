@@ -9,7 +9,7 @@ library(ggplot2)
 
 
 #Read in current version of LSF log files
-working_file <- read.csv("lsf_small.csv")
+working_file <- read.csv("lsf_10k.csv")
 
 #Define the 1-hour blocks which each time frame will be assigned to
 hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
@@ -28,9 +28,11 @@ working_file <-
          "hour_block"=case_when(event_time_hour == 0 ~ "00-01", #Define which of the 24 1-hour time blocks a given event belongs to
                                 TRUE ~ paste(sprintf("%02d", event_time_hour),
                                              sprintf("%02d", event_time_hour + 1), 
-                                             sep = "-"))) %>%
+                                             sep = "-")),
+         "day_block"=wday(event_time)) %>%
   #Arrange some of the most relevant columns to be first, followed by everything else
   select(hour_block,
+         day_block,
         start_time, 
           submit_time, 
           event_time, 
@@ -43,8 +45,8 @@ working_file <-
 
 
 working_file %>%
-  ggplot(aes(x=start_time, y=numProcessors)) +
-  geom_line() +
+  ggplot(aes(x=hour_block, y=numProcessors)) +
+  geom_point() +
   facet_wrap(~queue)
 
 
