@@ -44,43 +44,191 @@ working_file <-
           everything())
 
 #Identify the time windows available in the data, as dates:
-window_start <- format(as.Date(substr(min(working_file$event_time), 1, 10), format = "%Y-%m-%d"), "%d_%b_%Y")
-window_end   <- format(as.Date(substr(max(working_file$event_time), 1, 10), format = "%Y-%m-%d"), "%d_%b_%Y")
+window_start <- as.Date(min(working_file$event_time))
+window_end   <- as.Date(max(working_file$event_time))
 
 
-
-working_file %>%
-  ggplot(aes(x=day_block, y=numProcessors)) +
-  geom_point() +
-  facet_wrap(~queue) +
-  theme(panel.border=element_rect(fill=NA, color="black"),
-        axis.text.x=element_text(angle=45, hjust=1))
-
-working_file %>%
-  group_by(day_block) %>%
-  mutate("numProcessors_sum"=sum(numProcessors)) %>%
+#Plot CPU usage by day and by queue
+p1 <- 
+  working_file %>%
+  group_by(day_block, queue) %>%
+  mutate("cpu_sum"=sum(numProcessors)) %>%
   ungroup() %>%
-  ggplot(aes(x=day_block, y=numProcessors_sum, color=numProcessors_sum)) +
+  select(day_block, queue, cpu_sum) %>%
+  unique() %>%
+  ggplot(aes(x=day_block, y=cpu_sum)) +
+  geom_col(fill="seagreen4") +
   geom_point() +
   facet_wrap(~queue) +
+  ggtitle("CPU usage by queue",
+          subtitle=paste0(window_start, " to ", window_end)) +
   theme(panel.border=element_rect(fill=NA, color="black"),
-        axis.text.x=element_text(angle=45, hjust=1))
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5)) +
+  xlab("") +
+  ylab("# CPU Processors")
+ggsave("plots/p1.svg", p1, width=5, height=5)
 
-#numProcessors by users, colored by queue
-working_file %>%
+
+#Plot total CPU usage by day
+p2 <- 
+  working_file %>%
+  group_by(day_block) %>%
+  mutate("cpu_sum"=sum(numProcessors)) %>%
+  ungroup() %>%
+  select(day_block, queue, cpu_sum) %>%
+  unique() %>%
+  ggplot(aes(x=day_block, y=cpu_sum)) +
+  geom_bar(stat="sum", width=0.6, fill="steelblue4") +
+  geom_point(size=2)+
+  ggtitle("CPU usage by day (all queues)",
+          subtitle=paste0(window_start, " to ", window_end)) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        legend.position="none") +
+  xlab("") +
+  ylab("# CPU Processors")
+ggsave("plots/p2.svg", p2, width=5, height=5)
+
+#Plot total CPU usage by queue
+p3 <- 
+  working_file %>%
+  group_by(queue) %>%
+  mutate("cpu_sum"=sum(numProcessors)) %>%
+  ungroup() %>%
+  select(queue, cpu_sum) %>%
+  unique() %>%
+  ggplot(aes(x=cpu_sum, y=reorder(queue, cpu_sum))) +
+  geom_bar(stat="sum", width=0.7) +
+  geom_point(size=2)+
+  ggtitle("CPU usage by queue",
+          subtitle=paste0(window_start, " to ", window_end)) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        legend.position="none") +
+  ylab("") +
+  xlab("# CPU Processors")
+ggsave("plots/p3.svg", p3, width=5, height=5)
+
+
+#Plot CPUs by each user (across all queues) 
+p4 <- 
+  working_file %>%
+  group_by(userName) %>%
+  mutate("cpu_sum"=sum(numProcessors)) %>%
+  select(userName, cpu_sum) %>%
+  unique() %>%
+  ggplot(aes(x=cpu_sum, y=reorder(userName, cpu_sum))) +
+  geom_point() +
+  xlab("# CPUs") +
+  ylab("")+
+  ggtitle("CPU usage by user",
+          subtitle=paste0(window_start, " to ", window_end)) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5))
+ggsave("plots/p4.svg", p4, width=4.3, height=10.75)
+
+
+#Plot CPUs by each user (highlight the queues)
+p5 <- 
+  working_file %>%
+  group_by(userName, queue) %>%
+  mutate("cpu_que_sum"=sum(numProcessors)) %>%
+  ungroup() %>%
+  group_by(userName) %>%
+  mutate("total_cpu_sum"=sum(numProcessors)) %>%
+  ungroup() %>%
+  select(userName, queue, cpu_que_sum, total_cpu_sum) %>%
+  unique() %>%
+  ggplot(aes(x=cpu_que_sum, y=reorder(userName, total_cpu_sum), color=queue)) +
+  geom_point() +
+  xlab("# CPUs") +
+  ylab("")+
+  ggtitle("CPU usage by user and queue",
+          subtitle=paste0(window_start, " to ", window_end)) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5))
+ggsave("plots/p5.svg", p5, width=6, height=10.75)
+
+
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Plot the CPU usage by user, coloring the queues
+p4 <- 
+  working_file %>%
+  select(userName, numProcessors, queue) %>%
+  unique() %>%
   ggplot(aes(x=numProcessors, y=reorder(userName, numProcessors), color=queue)) +
-  geom_point()
+  geom_point() +
+  xlab("# of CPUs") +
+  ylab("") +
+  ggtitle("CPU usage by user",
+          subtitle=paste0(window_start, " to ", window_end)) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5))
+ggsave("plots/p4.svg", p4, width=5.5, height=10.75)
 
-#Total numProcessors by users
+#Plot the CPU usage by user (all queues)
 working_file %>%
+  select(userName, numProcessors, queue) %>%
+  group_by(userName, queue) %>%
+  mutate("cpu_sum"=sum(numProcessors)) %>%
+  ungroup() %>%
+  unique() %>%
+  View()
+  
+
+
+
+#How many total processors are being used by each user?
+p4 <- 
+  working_file %>%
   group_by(userName) %>%
   mutate(numProcessors_sum = sum(numProcessors)) %>%
   ungroup() %>%
+  select(numProcessors_sum, userName) %>%
+  unique() %>%
   ggplot(aes(x=numProcessors_sum, y=reorder(userName, numProcessors_sum))) +
   geom_point() +
-  xlab("Cummulative # of Processors") +
+  xlab("# of Processors") +
   ylab("") +
-  ggtitle(paste0(as.date(window_start)))
+  ggtitle("Cumulative CPU usage by user",
+          subtitle=paste0(window_start, " to ", window_end)) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5))
+ggsave("plots/cumulative_user_usage.svg", p4, width=4.3, height=10.75)
 
 
 
