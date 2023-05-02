@@ -7,6 +7,9 @@ library(readr)
 library(dplyr)
 library(ggplot2)
 
+#Set WD to appropriate folder
+setwd("format_and_visualize/")
+
 
 #Read in current version of LSF log files
 working_file <- read.csv("lsf_100k.csv")
@@ -153,93 +156,6 @@ p5 <-
         plot.title=element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5))
 ggsave("plots/p5.svg", p5, width=6, height=10.75)
-
-
-#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#Plot the CPU usage by user, coloring the queues
-p4 <- 
-  working_file %>%
-  select(userName, numProcessors, queue) %>%
-  unique() %>%
-  ggplot(aes(x=numProcessors, y=reorder(userName, numProcessors), color=queue)) +
-  geom_point() +
-  xlab("# of CPUs") +
-  ylab("") +
-  ggtitle("CPU usage by user",
-          subtitle=paste0(window_start, " to ", window_end)) +
-  theme(panel.border=element_rect(fill=NA, color="black"),
-        plot.title=element_text(hjust=0.5),
-        plot.subtitle = element_text(hjust=0.5))
-ggsave("plots/p4.svg", p4, width=5.5, height=10.75)
-
-#Plot the CPU usage by user (all queues)
-working_file %>%
-  select(userName, numProcessors, queue) %>%
-  group_by(userName, queue) %>%
-  mutate("cpu_sum"=sum(numProcessors)) %>%
-  ungroup() %>%
-  unique() %>%
-  View()
-  
-
-
-
-#How many total processors are being used by each user?
-p4 <- 
-  working_file %>%
-  group_by(userName) %>%
-  mutate(numProcessors_sum = sum(numProcessors)) %>%
-  ungroup() %>%
-  select(numProcessors_sum, userName) %>%
-  unique() %>%
-  ggplot(aes(x=numProcessors_sum, y=reorder(userName, numProcessors_sum))) +
-  geom_point() +
-  xlab("# of Processors") +
-  ylab("") +
-  ggtitle("Cumulative CPU usage by user",
-          subtitle=paste0(window_start, " to ", window_end)) +
-  theme(panel.border=element_rect(fill=NA, color="black"),
-        plot.title=element_text(hjust=0.5),
-        plot.subtitle = element_text(hjust=0.5))
-ggsave("plots/cumulative_user_usage.svg", p4, width=4.3, height=10.75)
-
-
-
-
-
-
-
-
-
-
-
 
 
 

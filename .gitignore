@@ -2,5 +2,4 @@
 .Rhistory
 .RData
 .Ruserdata
-lsf_100k.csv
-plots/
+format_and_visualize/lsf_100k.csv
