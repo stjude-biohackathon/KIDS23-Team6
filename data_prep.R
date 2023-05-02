@@ -29,7 +29,7 @@ working_file <-
                                 TRUE ~ paste(sprintf("%02d", event_time_hour),
                                              sprintf("%02d", event_time_hour + 1), 
                                              sep = "-")),
-         "day_block"=wday(event_time)) %>%
+         "day_block"=wday(event_time, label=TRUE)) %>%
   #Arrange some of the most relevant columns to be first, followed by everything else
   select(hour_block,
          day_block,
@@ -43,11 +43,44 @@ working_file <-
           userName,
           everything())
 
+#Identify the time windows available in the data, as dates:
+window_start <- format(as.Date(substr(min(working_file$event_time), 1, 10), format = "%Y-%m-%d"), "%d_%b_%Y")
+window_end   <- format(as.Date(substr(max(working_file$event_time), 1, 10), format = "%Y-%m-%d"), "%d_%b_%Y")
+
+
 
 working_file %>%
-  ggplot(aes(x=hour_block, y=numProcessors)) +
+  ggplot(aes(x=day_block, y=numProcessors)) +
   geom_point() +
-  facet_wrap(~queue)
+  facet_wrap(~queue) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        axis.text.x=element_text(angle=45, hjust=1))
+
+working_file %>%
+  group_by(day_block) %>%
+  mutate("numProcessors_sum"=sum(numProcessors)) %>%
+  ungroup() %>%
+  ggplot(aes(x=day_block, y=numProcessors_sum, color=numProcessors_sum)) +
+  geom_point() +
+  facet_wrap(~queue) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        axis.text.x=element_text(angle=45, hjust=1))
+
+#numProcessors by users, colored by queue
+working_file %>%
+  ggplot(aes(x=numProcessors, y=reorder(userName, numProcessors), color=queue)) +
+  geom_point()
+
+#Total numProcessors by users
+working_file %>%
+  group_by(userName) %>%
+  mutate(numProcessors_sum = sum(numProcessors)) %>%
+  ungroup() %>%
+  ggplot(aes(x=numProcessors_sum, y=reorder(userName, numProcessors_sum))) +
+  geom_point() +
+  xlab("Cummulative # of Processors") +
+  ylab("") +
+  ggtitle(paste0(as.date(window_start)))
 
 
 
