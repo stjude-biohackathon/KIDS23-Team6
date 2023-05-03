@@ -7,11 +7,14 @@ library(stringr)
 library(DBI)
 
 # Database setup ---------------------------------------------------------------
+
+# IMPORTANT: Remember to unzipe the 'lsf_100k.zip' file!
+
 # Bit of code to help with file paths
 find_file <- rprojroot::is_rstudio_project$find_file
 
 # Setup the database connection
-sqlite_file <- DBI::dbConnect(RSQLite::SQLite(), "demo.sqlite")
+sqlite_file <- DBI::dbConnect(RSQLite::SQLite(), find_file("demo.sqlite"))
 
 # Read in the 10k dataset from CSV
 (data 
@@ -20,7 +23,7 @@ sqlite_file <- DBI::dbConnect(RSQLite::SQLite(), "demo.sqlite")
   |> janitor::clean_names())
 
 # Write the records to a DB table
-dplyr::copy_to(sqlite_file, data, "LogEntries")
+dplyr::copy_to(sqlite_file, data, "LogEntries", temporary = FALSE)
 
 # DB Proof of Concept ----------------------------------------------------------
 
@@ -85,7 +88,7 @@ working_file <-
 
 # Write the working file back to the database
 
-dplyr::copy_to(sqlite_file, working_file, "LogEntriesCleaned")
+dplyr::copy_to(sqlite_file, working_file, "LogEntriesCleaned", temporary = FALSE)
 
 # Clean up your DB connection
 dbDisconnect(sqlite_file)
