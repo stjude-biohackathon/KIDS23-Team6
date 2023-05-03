@@ -156,3 +156,26 @@ p5 <-
         plot.title=element_text(hjust=0.5),
         plot.subtitle = element_text(hjust=0.5))
 ggsave("p5.svg", p5, width=6, height=10.75)
+
+
+
+p6 <-
+  working_file %>%
+  group_by(hour_block) %>%
+  mutate("cpu_sum"=sum(numProcessors)) %>%
+  ungroup() %>%
+  select(cpu_sum, hour_block, queue) %>%
+  unique() %>%
+  ggplot(aes(x=hour_block, y=cpu_sum, fill=queue)) +
+  facet_wrap(~queue, ncol=1) +
+  geom_col(color="black") +
+  ylab("# CPUs") +
+  xlab("")+
+  ggtitle("CPU usage by hour",
+          subtitle=paste0(window_start, " to ", window_end)) +
+  theme(panel.border=element_rect(fill=NA, color="black"),
+        plot.title=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        axis.text.x=element_text(angle=45, hjust=1),
+        legend.position="none")
+ggsave("p6.svg", p6, width=6, height=10.75)
