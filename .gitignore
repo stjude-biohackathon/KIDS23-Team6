@@ -3,4 +3,5 @@
 .RData
 .Ruserdata
 log_data/lsf_100k.csv
+log_data/lsf_4m.csv
 *.sqlite
