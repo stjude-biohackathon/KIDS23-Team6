@@ -58,32 +58,30 @@ hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
 
 #Add modified columns to the data like changing Epoch time format
 #Ex: '1682116121' (original colname startTime) becomes '2023-04-21 17:28:41 CDT' (new colname start_time)
-working_file <-
-  tbl(sqlite_file, "LogEntries") %>%
-  mutate("start_time"=as_datetime(start_time),   
-         "submit_time"=as_datetime(submit_time),
-         "event_time"=as_datetime(event_time),
-         "pend_time"=start_time-submit_time,        #pending time should be start minus submit
-         "end_time"=as_datetime(start_time + run_time), #end time should be start plus run
-         "event_time_hour"=hour(event_time),      #which of the 24 hours a given event_time belongs to
-         "run_time_sec"=run_time,
-         "hour_block"=case_when(event_time_hour == 0 ~ "00-01", #Define which of the 24 1-hour time blocks a given event belongs to
-                                event_time_hour > 9 ~ paste0(event_time_hour, "-", event_time_hour+1),
-                                event_time_hour == 9 ~ paste0("0", event_time_hour, "-", event_time_hour+1),
-                                event_time_hour < 9 ~ paste0("0", event_time_hour, "-0", event_time_hour+1)),
-         "day_block"=format(event_time, "%u")) %>%
-  #Arrange some of the most relevant columns to be first, followed by everything else
-  select(hour_block,
-         day_block,
-         start_time, 
-         submit_time, 
-         event_time, 
-         event_time_hour,
-         run_time_sec,
-         num_processors,
-         max_r_mem,
-         user_name,
-         everything())
+(working_file 
+  <- tbl(sqlite_file, "LogEntries")
+  |> mutate(
+    "start_time"      = as_datetime(start_time),   
+    "submit_time"     = as_datetime(submit_time),
+    "event_time"      = as_datetime(event_time),
+    "pend_time"       = start_time-submit_time,        #pending time should be start minus submit
+    "end_time"        = as_datetime(start_time + run_time), #end time should be start plus run
+    "event_time_hour" = hour(event_time),      #which of the 24 hours a given event_time belongs to
+    "run_time_sec"    = run_time,
+    "hour_block"      = case_when(
+      event_time_hour == 0 ~ "00-01", #Define which of the 24 1-hour time blocks a given event belongs to
+      event_time_hour >  9 ~ paste0(     event_time_hour, "-",  event_time_hour+1),
+      event_time_hour == 9 ~ paste0("0", event_time_hour, "-",  event_time_hour+1),
+      event_time_hour <  9 ~ paste0("0", event_time_hour, "-0", event_time_hour+1)
+    ),
+    "day_block"       = format(event_time, "%u")
+  ) 
+  |> select(
+    hour_block,   day_block,      start_time, 
+    submit_time,  event_time,     event_time_hour,
+    run_time_sec, num_processors, max_r_mem,
+    user_name,    everything()
+  ))
          
          
 # Write the working file back to the database
