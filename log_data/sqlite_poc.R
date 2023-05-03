@@ -83,11 +83,10 @@ working_file <-
          num_processors,
          max_r_mem,
          user_name,
-         everything()) |>
-  collect()
-
+         everything())
+         
+         
 # Write the working file back to the database
-
 dplyr::copy_to(sqlite_file, working_file, "LogEntriesCleaned", temporary = FALSE)
 
 # Clean up your DB connection
