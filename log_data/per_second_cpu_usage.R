@@ -12,8 +12,15 @@ furrr_options(seed = NULL)
 plan(multisession, workers = 6, gc = TRUE)
 
 # Drop the per-second table
-DBI::dbRemoveTable(conn, PER_SECOND_TABLE, fail_if_missing = FALSE)
-DBI::dbSendStatement(conn, "ALTER TABLE per_second_cpus_count DROP CONSTRAINT timestamp_idx RESTRICT;")
+DBI::dbRemoveTable(conn, PER_SECOND_TABLE,       fail_if_missing = FALSE)
+
+PER_SECOND_TABLE_FIELDS <- data.frame(
+  queue = character(), second = numeric(), cpus = numeric(),
+  mem   = numeric(),   run    = numeric(), pend = numeric(),
+  gpu   = numeric()
+)
+
+DBI::dbCreateTable(conn, PER_SECOND_TABLE, PER_SECOND_TABLE_FIELDS)
 
 # Database setup ---------------------------------------------------------------
 
@@ -45,11 +52,11 @@ expand_per_second_chunk_to_db <- function(start_row = 1, length = 1000) {
    |> group_by(second, queue)
    |> mutate(across(everything(), ~ replace(.x, .x == -1, NA)))
    |> summarise(
-     cpus    = sum(num_processors, na.rm = T),
-     mem     = sum(avg_mem, na.rm = T),
-     run     = sum(run_time, na.rm = T),
+     cpus    = sum(num_processors,       na.rm = T),
+     mem     = sum(avg_mem,              na.rm = T),
+     run     = sum(run_time,             na.rm = T),
      pend    = sum(ineligible_pend_time, na.rm = T),
-     gpu     = sum(num_gpu_rusages, na.rm = T),
+     gpu     = sum(num_gpu_rusages,      na.rm = T),
      .groups = "drop"
    )
    |> arrange(second))
@@ -59,7 +66,7 @@ expand_per_second_chunk_to_db <- function(start_row = 1, length = 1000) {
   rm(chunk)
 }
 
-chunk_size    <- 750 # Don't make this too big!
+chunk_size    <- 1000 # Don't make this too big!
 total_rows    <- tbl(conn, LOG_ENTRY_TABLE) |> count() |> pull(n)
 chunk_starts  <- seq(1, total_rows, by = chunk_size)
 process_chunk <- \(x) expand_per_second_chunk_to_db(x, chunk_size)
@@ -68,13 +75,13 @@ furrr::future_walk(chunk_starts, process_chunk, .progress = TRUE)
 
  # Now combine all the chunk sub-results into one final result, in the database!
 (tbl(conn, PER_SECOND_TABLE)
-  |> group_by(second)
+  |> group_by(queue, second)
   |> summarise(cpus = sum(cpus, na.rm = TRUE))
   |> arrange(second)
   |> filter(second >= first_event)
   |> compute(PER_SECOND_TABLE, overwrite = TRUE))
 
-DBI::dbSendStatement(conn, "CREATE UNIQUE INDEX timestamp_idx ON per_second_cpus_count (second);")
+DBI::dbSendStatement(conn, "CREATE UNIQUE INDEX timestamp_idx ON per_second_cpus_count (queue, second);")
 
 
 
