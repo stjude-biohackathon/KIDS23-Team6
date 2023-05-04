@@ -11,6 +11,7 @@ find_file <- rprojroot::is_rstudio_project$find_file
 
 SOURCE_FILE      <- find_file("log_data/lsf_4m.csv")
 LOG_ENTRY_TABLE  <- "log_entries"
+CONN_TYPE        <- "postgres"  # postgres or sqlite
 
 RAW_DATA_COL_NME <- c(
   "event_type", "version_number", "event_time", 
@@ -60,34 +61,62 @@ RAW_DATA_COL_NME <- c(
   "finish_kvp_value"
 )
 
-# Connect to SQLite ------------------------------------------------------------
+# Connect to DB ----------------------------------------------------------------
 
-# IMPORTANT: Remember to unzip the 'lsf_100k.zip' file!
+get_conn <- function(type) {
+  if (type == "sqlite") {
+    DBI::dbConnect(RSQLite::SQLite(), find_file("demo.sqlite"))
+  } else if (type == "postgres") {
+    dbConnect(RPostgres::Postgres(), 
+              dbname   = "postgres", 
+              host     = "localhost", 
+              port     = "5432", 
+              user     = "postgres", 
+              password = "postgres")
+  } else {
+    stop(type)
+  }
+}
 
-# Setup the database connection
-# conn <- DBI::dbConnect(RSQLite::SQLite(), find_file("demo.sqlite"))
-
-# Connect to Postgres ----------------------------------------------------------
-
-conn <- dbConnect(RPostgres::Postgres(), 
-                  dbname   = "postgres", 
-                  host     = "localhost", 
-                  port     = "5432", 
-                  user     = "postgres", 
-                  password = "postgres")
+conn <- get_conn(CONN_TYPE)
 
 # Write parsed log to CSV ------------------------------------------------------
 
 # Drop previous log table
 DBI::dbRemoveTable(conn, LOG_ENTRY_TABLE, fail_if_missing = FALSE)
 
+LOG_ENTRY_FIELDS <- data.frame(
+  row_number      = numeric(), job_id     = numeric(),  idx                  = numeric(), 
+  requeue_time    = numeric(), start_time = numeric(),  approx_start         = numeric(),
+  event_time      = numeric(), approx_end = numeric(),  num_processors       = numeric(),
+  avg_mem         = numeric(), run_time   = numeric(),  ineligible_pend_time = numeric(),
+  num_gpu_rusages = numeric(), queue      = character()
+)
+
+DBI::dbCreateTable(conn, LOG_ENTRY_TABLE, LOG_ENTRY_FIELDS)
+DBI::dbSendStatement(conn, "ALTER TABLE log_entries ADD CONSTRAINT log_entries_pk PRIMARY KEY (job_id, idx, requeue_time);")
+DBI::dbSendStatement(conn, "CREATE INDEX event_time_idx ON log_entries (event_time) WITH (deduplicate_items = off);")
+DBI::dbSendStatement(conn, "CREATE UNIQUE INDEX row_idx ON log_entries (row_number);")
+
 # Read in the 10k dataset from CSV and write to the database
-write_chunk_to_db <- function(conn, df) {
-  clean <- janitor::clean_names(df)
+write_chunk_to_db <- function(conn, df, pos) {
+  (clean 
+   <- janitor::clean_names(df)
+   |> mutate(approx_start = signif(start_time, 7),
+             approx_end   = signif(event_time, 7),
+             row_number   = pos + row_number() - 1)
+   |> filter(start_time > 0)
+   |> select(
+     row_number,      job_id,       idx,        requeue_time, 
+     start_time,      approx_start, event_time, approx_end,
+     num_processors,  avg_mem,      run_time,   ineligible_pend_time,
+     num_gpu_rusages, queue
+    ))
+  
   DBI::dbWriteTable(conn, LOG_ENTRY_TABLE, clean, append = TRUE)
 }
 
-write_chunk_callback <- \(x, y) write_chunk_to_db(conn, x)
+write_chunk_callback <- \(x, y) write_chunk_to_db(conn, x, y)
 
 read_csv_chunked(SOURCE_FILE, 
                  callback   = write_chunk_callback,
@@ -95,69 +124,6 @@ read_csv_chunked(SOURCE_FILE,
                  guess_max  = 10000,
                  col_names  = RAW_DATA_COL_NME,
                  skip       = 1)
-
-DBI::dbSendQuery(conn, "CREATE UNIQUE INDEX job_id_idx ON log_entries (job_id, idx);")
-
-# (data
-#   <- SOURCE_FILE
-#   |> readr::read_csv(guess_max = 10000)
-#   |> janitor::clean_names())
-# 
-# # Write the records to a DB table
-# dplyr::copy_to(conn, data, "LogEntries", temporary = FALSE)
-
-# DB Proof of Concept ----------------------------------------------------------
-
-# Example for working with data directly through a DB connection.
-# We'll get the average run time per user
-# (avg_per_user_runtime
-#   <- tbl(conn, "LogEntries")
-#   |> group_by(user_id)
-#   |> summarise(avg_runtime = mean(run_time))
-#   |> collect())
-# 
-# 
-# # You can always check to see what SQL query is being generated
-# (tbl(conn, "LogEntries")
-#   |> group_by(user_id)
-#   |> summarise(avg_runtime = mean(run_time))
-#   |> show_query())
-
-# Code for building the current interim data set -------------------------------
-
-#Define the 1-hour blocks which each time frame will be assigned to
-# hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
-
-#Add modified columns to the data like changing Epoch time format
-#Ex: '1682116121' (original colname startTime) becomes '2023-04-21 17:28:41 CDT' (new colname start_time)
-# (working_file 
-#   <- tbl(conn, "LogEntries")
-#   |> mutate(
-#     "start_time"      = as_datetime(start_time),   
-#     "submit_time"     = as_datetime(submit_time),
-#     "event_time"      = as_datetime(event_time),
-#     "pend_time"       = start_time-submit_time,             #pending time should be start minus submit
-#     "end_time"        = as_datetime(start_time + run_time), #end time should be start plus run
-#     "event_time_hour" = hour(event_time),                   #which of the 24 hours a given event_time belongs to
-#     "run_time_sec"    = run_time,
-#     "hour_block"      = case_when(
-#       event_time_hour == 0 ~ "00-01", #Define which of the 24 1-hour time blocks a given event belongs to
-#       event_time_hour >  9 ~ paste0(     event_time_hour, "-",  event_time_hour+1),
-#       event_time_hour == 9 ~ paste0("0", event_time_hour, "-",  event_time_hour+1),
-#       event_time_hour <  9 ~ paste0("0", event_time_hour, "-0", event_time_hour+1)
-#     ),
-#     "day_block"       = format(event_time, "%u")
-#   ) 
-#   |> select(
-#     hour_block,   day_block,      start_time, 
-#     submit_time,  event_time,     event_time_hour,
-#     run_time_sec, num_processors, max_r_mem,
-#     user_name,    everything()
-#   ))
-         
-         
-# Write the working file back to the database
-# dplyr::copy_to(conn, working_file, "LogEntriesCleaned", temporary = FALSE)
 
 # Run the Per-Second Transform -------------------------------------------------
 

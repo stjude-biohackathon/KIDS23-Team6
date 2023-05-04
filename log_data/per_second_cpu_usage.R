@@ -8,11 +8,12 @@ library(DBI)
 
 PER_SECOND_TABLE <- "per_second_cpus_count"
 
-future_options(seed = NULL)
+furrr_options(seed = NULL)
 plan(multisession, workers = 6, gc = TRUE)
 
 # Drop the per-second table
 DBI::dbRemoveTable(conn, PER_SECOND_TABLE, fail_if_missing = FALSE)
+DBI::dbSendStatement(conn, "ALTER TABLE per_second_cpus_count DROP CONSTRAINT timestamp_idx RESTRICT;")
 
 # Database setup ---------------------------------------------------------------
 
@@ -22,34 +23,35 @@ pseq <- Vectorize(seq.default, vectorize.args = c("from", "to"), SIMPLIFY = FALS
 # AKA, on or after the first `event_time`
 (first_event 
   <- tbl(conn, LOG_ENTRY_TABLE)
-  |> summarise(first_event = min(event_time))
+  |> summarise(first_event = min(approx_end))
   |> pull(first_event)
   |> unique())
 
 expand_per_second_chunk_to_db <- function(start_row = 1, length = 1000) {
-  conn <- dbConnect(RPostgres::Postgres(), 
-                    dbname   = "postgres", 
-                    host     = "localhost", 
-                    port     = "5432", 
-                    user     = "postgres", 
-                    password = "postgres")
+  conn <- get_conn(CONN_TYPE)
   
   (chunk
    <- tbl(conn, LOG_ENTRY_TABLE)
-   |> select(job_id, start_time, event_time, num_processors)
    |> filter(
-     start_time   >  0,
-     row_number() >= start_row, 
-     row_number() <  start_row + length
+     row_number >= start_row, 
+     row_number <  start_row + length
    )
    |> collect()
    |> mutate(
-     true_start = pmax(first_event, start_time),
-     second     = pseq(true_start, event_time)
+     true_start = pmax(first_event, approx_start),
+     second     = pseq(true_start, approx_end, by = 1000)
    )
    |> tidyr::unnest(second)
-   |> group_by(second)
-   |> summarise(cpus = sum(num_processors))
+   |> group_by(second, queue)
+   |> mutate(across(everything(), ~ replace(.x, .x == -1, NA)))
+   |> summarise(
+     cpus    = sum(num_processors, na.rm = T),
+     mem     = sum(avg_mem, na.rm = T),
+     run     = sum(run_time, na.rm = T),
+     pend    = sum(ineligible_pend_time, na.rm = T),
+     gpu     = sum(num_gpu_rusages, na.rm = T),
+     .groups = "drop"
+   )
    |> arrange(second))
   
   dbWriteTable(conn, PER_SECOND_TABLE, chunk, append = TRUE)
@@ -57,7 +59,7 @@ expand_per_second_chunk_to_db <- function(start_row = 1, length = 1000) {
   rm(chunk)
 }
 
-chunk_size    <- 500 # Don't make this too big!
+chunk_size    <- 750 # Don't make this too big!
 total_rows    <- tbl(conn, LOG_ENTRY_TABLE) |> count() |> pull(n)
 chunk_starts  <- seq(1, total_rows, by = chunk_size)
 process_chunk <- \(x) expand_per_second_chunk_to_db(x, chunk_size)
@@ -72,7 +74,7 @@ furrr::future_walk(chunk_starts, process_chunk, .progress = TRUE)
   |> filter(second >= first_event)
   |> compute(PER_SECOND_TABLE, overwrite = TRUE))
 
-DBI::dbSendQuery(conn, "CREATE UNIQUE INDEX timestamp_idx ON per_second_cpus_count (second);")
+DBI::dbSendStatement(conn, "CREATE UNIQUE INDEX timestamp_idx ON per_second_cpus_count (second);")
 
 
 
