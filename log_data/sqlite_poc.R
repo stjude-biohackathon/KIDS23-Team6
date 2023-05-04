@@ -10,7 +10,7 @@ library(DBI)
 find_file <- rprojroot::is_rstudio_project$find_file
 
 SOURCE_FILE      <- find_file("log_data/lsf_4m.csv")
-LOG_ENTRY_TABLE  <- "LogEntries"
+LOG_ENTRY_TABLE  <- "log_entries"
 
 RAW_DATA_COL_NME <- c(
   "event_type", "version_number", "event_time", 
@@ -60,15 +60,26 @@ RAW_DATA_COL_NME <- c(
   "finish_kvp_value"
 )
 
-# Database setup ---------------------------------------------------------------
+# Connect to SQLite ------------------------------------------------------------
 
-# IMPORTANT: Remember to unzipe the 'lsf_100k.zip' file!
+# IMPORTANT: Remember to unzip the 'lsf_100k.zip' file!
 
 # Setup the database connection
-sqlite_file <- DBI::dbConnect(RSQLite::SQLite(), find_file("demo.sqlite"))
+# conn <- DBI::dbConnect(RSQLite::SQLite(), find_file("demo.sqlite"))
+
+# Connect to Postgres ----------------------------------------------------------
+
+conn <- dbConnect(RPostgres::Postgres(), 
+                  dbname   = "postgres", 
+                  host     = "localhost", 
+                  port     = "5432", 
+                  user     = "postgres", 
+                  password = "postgres")
+
+# Write parsed log to CSV ------------------------------------------------------
 
 # Drop previous log table
-DBI::dbRemoveTable(sqlite_file, LOG_ENTRY_TABLE, fail_if_missing = FALSE)
+DBI::dbRemoveTable(conn, LOG_ENTRY_TABLE, fail_if_missing = FALSE)
 
 # Read in the 10k dataset from CSV and write to the database
 write_chunk_to_db <- function(conn, df) {
@@ -76,34 +87,38 @@ write_chunk_to_db <- function(conn, df) {
   DBI::dbWriteTable(conn, LOG_ENTRY_TABLE, clean, append = TRUE)
 }
 
-write_chunk_callback <- \(x, y) write_chunk_to_db(sqlite_file, x)
+write_chunk_callback <- \(x, y) write_chunk_to_db(conn, x)
 
 read_csv_chunked(SOURCE_FILE, 
-                 callback   = SideEffectChunkCallback$new(write_chunk_callback),
+                 callback   = write_chunk_callback,
                  chunk_size = 100000,
                  guess_max  = 10000,
-                 col_names  = RAW_DATA_COL_NME)
+                 col_names  = RAW_DATA_COL_NME,
+                 skip       = 1)
+
+DBI::dbSendQuery(conn, "CREATE UNIQUE INDEX job_id_idx ON log_entries (job_id, idx);")
+
 # (data
 #   <- SOURCE_FILE
 #   |> readr::read_csv(guess_max = 10000)
 #   |> janitor::clean_names())
 # 
 # # Write the records to a DB table
-# dplyr::copy_to(sqlite_file, data, "LogEntries", temporary = FALSE)
+# dplyr::copy_to(conn, data, "LogEntries", temporary = FALSE)
 
 # DB Proof of Concept ----------------------------------------------------------
 
 # Example for working with data directly through a DB connection.
 # We'll get the average run time per user
 # (avg_per_user_runtime
-#   <- tbl(sqlite_file, "LogEntries")
+#   <- tbl(conn, "LogEntries")
 #   |> group_by(user_id)
 #   |> summarise(avg_runtime = mean(run_time))
 #   |> collect())
 # 
 # 
 # # You can always check to see what SQL query is being generated
-# (tbl(sqlite_file, "LogEntries")
+# (tbl(conn, "LogEntries")
 #   |> group_by(user_id)
 #   |> summarise(avg_runtime = mean(run_time))
 #   |> show_query())
@@ -111,12 +126,12 @@ read_csv_chunked(SOURCE_FILE,
 # Code for building the current interim data set -------------------------------
 
 #Define the 1-hour blocks which each time frame will be assigned to
-hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
+# hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
 
 #Add modified columns to the data like changing Epoch time format
 #Ex: '1682116121' (original colname startTime) becomes '2023-04-21 17:28:41 CDT' (new colname start_time)
 # (working_file 
-#   <- tbl(sqlite_file, "LogEntries")
+#   <- tbl(conn, "LogEntries")
 #   |> mutate(
 #     "start_time"      = as_datetime(start_time),   
 #     "submit_time"     = as_datetime(submit_time),
@@ -142,7 +157,11 @@ hour_blocks <- sprintf("%02d-%02d", 0:23, 1:24)
          
          
 # Write the working file back to the database
-# dplyr::copy_to(sqlite_file, working_file, "LogEntriesCleaned", temporary = FALSE)
+# dplyr::copy_to(conn, working_file, "LogEntriesCleaned", temporary = FALSE)
 
-# Clean up your DB connection
-dbDisconnect(sqlite_file)
+# Run the Per-Second Transform -------------------------------------------------
+
+find_file("log_data/per_second_cpu_usage.R") |> source()
+
+# Clean up your DB connection --------------------------------------------------
+dbDisconnect(conn)
