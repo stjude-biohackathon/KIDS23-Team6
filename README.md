@@ -24,6 +24,8 @@ This project changed from a data processing to a data engineering and reduction 
 
 <img width="1179" alt="image" src="https://user-images.githubusercontent.com/43145254/236521567-dd7976cd-8e57-4c7c-98fe-4c326fedf647.png">
 
+## Data files and inputs
+
 # So, what's the need?
 
 The HPCF team has gotten multiple requests regarding the usage of the cluster as a whole as well as for individual queues and departments. There is a tool which provides some visualiztion capabilties, but it's overly complicated for everyday use and for researchers who cannot dedicate time to understand all the intricacies.
