@@ -26,6 +26,12 @@ This project changed from a data processing to a data engineering and reduction 
 
 ## Data files and inputs
 
+The input data we used comes primarily from LSF log files and LSF command outputs. Here is a sample of the command outputs:
+
+<img width="964" alt="image" src="https://user-images.githubusercontent.com/43145254/236540070-fa00d7f1-6608-440a-a5bd-afa5981ef78f.png">
+
+The data in the LSF log files is quite large indeed. We have logs dating back to September of 2021.
+
 # So, what's the need?
 
 The HPCF team has gotten multiple requests regarding the usage of the cluster as a whole as well as for individual queues and departments. There is a tool which provides some visualiztion capabilties, but it's overly complicated for everyday use and for researchers who cannot dedicate time to understand all the intricacies.
