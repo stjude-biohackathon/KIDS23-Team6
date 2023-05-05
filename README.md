@@ -23,3 +23,11 @@ This project was built with:
 This project changed from a data processing to a data engineering and reduction effort once we realized how large the data-set is. The following is an illustration of the tranformation and reduction of data that had to take place before we could start visualization and machine-learning efforts:
 
 <img width="1179" alt="image" src="https://user-images.githubusercontent.com/43145254/236521567-dd7976cd-8e57-4c7c-98fe-4c326fedf647.png">
+
+# So, what's the need?
+
+The HPCF has gotten multiple requests regarding the usage of the cluster as a whole as well as for individual queues and departments. There is a tool which provides some visualiztion capabilties, but it's overly complicated for everyday use and for researchers who cannot dedicate time to understand all the intricacies.
+
+So, we're designing a simple and intuitive dashboard where researchers can view data relevant to them, their departments, or the institution as a whole.
+
+Furthermore, the HPCF team needs to be able to accurately predict future resource usage so that we can plan for expansions and refreshes of the infrastructure. This project provides information and visualization tools that will assist both researchers and the HPCF team in accomplishing these goals.
