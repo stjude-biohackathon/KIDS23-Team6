@@ -4,10 +4,11 @@ library(forecast)
 library(anytime)
 library(lubridate)
 library(ggplot2)
+library(readr)
 
 #Read in transformed log file
 working_file <- 
-  read_csv("C:/Users/wchar/Desktop/hackathon/KIDS23-Team6/per_second_cpu_counts_4M.csv")
+  read_csv("per_second_cpu_counts_4M.csv")
 
 
 #Define the 1-hour blocks which each time frame will be assigned to
