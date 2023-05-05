@@ -17,3 +17,9 @@ This project was built with:
 -	Docker – containerization software
 -	LSTM – AI, deep learning model for time-series data prediction
 -	R Shiny – R package for developing web applications
+
+# Pipeline
+
+This project changed from a data processing to a data engineering and reduction effort once we realized how large the data-set is. The following is an illustration of the tranformation and reduction of data that had to take place before we could start visualization and machine-learning efforts:
+
+<img width="1179" alt="image" src="https://user-images.githubusercontent.com/43145254/236521567-dd7976cd-8e57-4c7c-98fe-4c326fedf647.png">
