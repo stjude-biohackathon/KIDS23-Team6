@@ -38,4 +38,7 @@ The input data we used comes primarily from LSF log files and LSF command output
 
 <img width="964" alt="image" src="https://user-images.githubusercontent.com/43145254/236540070-fa00d7f1-6608-440a-a5bd-afa5981ef78f.png">
 
-The data in the LSF log files is quite large indeed. We have logs dating back to September of 2021 the total size of which is around 360GB.
+The data in the LSF log files is quite large indeed. We have logs dating back to September of 2021 the total size of which is around 360GB. The data files are comma-delimited and have over 130 columns per line with over a hundred million lines total. Here is a sample of the data:
+
+<img width="774" alt="image" src="https://user-images.githubusercontent.com/43145254/236546771-3e32ef74-688a-4808-9385-47af26d854b1.png">
+
