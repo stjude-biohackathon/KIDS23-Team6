@@ -7,3 +7,13 @@ The aim is to summarize historical data, provide useful forecasts of utilization
 - Historical usage trends.
 - Current usage of the cluster queues.
 - A prediction of future usage of the cluster queues.
+
+# About this project
+
+This project was built with:
+
+•	Tidyverse, Dplyr R packages – Packages for data science and data manipulation
+•	PostgreSQL – Relational database management system
+•	Docker – containerization software
+•	LSTM – AI, deep learning model for time-series data prediction
+•	R Shiny – R package for developing web applications
