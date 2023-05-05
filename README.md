@@ -1,3 +1,2 @@
-# KIDS23-Team6
+# KIDS23-Team6 - Visualization and prediction of HPC resource utilization
 
-Visualization and prediction of HPC resource utilization
