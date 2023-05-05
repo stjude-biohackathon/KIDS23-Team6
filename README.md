@@ -16,6 +16,11 @@ So, we're designing a simple and intuitive dashboard where researchers can view 
 
 Furthermore, the HPCF team needs to be able to accurately predict future resource usage so that we can plan for expansions and refreshes of the infrastructure. This project provides information and visualization tools that will assist both researchers and the HPCF team in accomplishing these goals.
 
+
+![demo_fig](https://user-images.githubusercontent.com/80007059/236574309-05250d93-d85d-4d55-a220-af51e7bb9ad5.svg)
+
+
+
 # About this project
 
 This project was built with:
@@ -36,6 +41,7 @@ The following is a visual representing the transformation on the original data r
 <img width="1113" alt="image" src="https://user-images.githubusercontent.com/43145254/236573325-e2374ec6-7bb6-4af5-bce7-5a76e92d2785.png">
 
 ## Data files and inputs
+
 
 The input data we used comes primarily from LSF log files and LSF command outputs. Here is a sample of the command outputs:
 
