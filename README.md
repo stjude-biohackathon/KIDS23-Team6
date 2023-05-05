@@ -32,6 +32,9 @@ This project changed from a data processing to a data engineering and reduction 
 
 <img width="1179" alt="image" src="https://user-images.githubusercontent.com/43145254/236521567-dd7976cd-8e57-4c7c-98fe-4c326fedf647.png">
 
+The following is a visual representing the transformation on the original data records to create a time-series for visualization and training purposes:
+<img width="1113" alt="image" src="https://user-images.githubusercontent.com/43145254/236573325-e2374ec6-7bb6-4af5-bce7-5a76e92d2785.png">
+
 ## Data files and inputs
 
 The input data we used comes primarily from LSF log files and LSF command outputs. Here is a sample of the command outputs:
