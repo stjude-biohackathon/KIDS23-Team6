@@ -12,8 +12,8 @@ The aim is to summarize historical data, provide useful forecasts of utilization
 
 This project was built with:
 
-•	Tidyverse, Dplyr R packages – Packages for data science and data manipulation
-•	PostgreSQL – Relational database management system
-•	Docker – containerization software
-•	LSTM – AI, deep learning model for time-series data prediction
-•	R Shiny – R package for developing web applications
+-	Tidyverse, Dplyr R packages – Packages for data science and data manipulation
+-	PostgreSQL – Relational database management system
+-	Docker – containerization software
+-	LSTM – AI, deep learning model for time-series data prediction
+-	R Shiny – R package for developing web applications
