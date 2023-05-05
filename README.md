@@ -26,7 +26,7 @@ This project changed from a data processing to a data engineering and reduction 
 
 # So, what's the need?
 
-The HPCF has gotten multiple requests regarding the usage of the cluster as a whole as well as for individual queues and departments. There is a tool which provides some visualiztion capabilties, but it's overly complicated for everyday use and for researchers who cannot dedicate time to understand all the intricacies.
+The HPCF team has gotten multiple requests regarding the usage of the cluster as a whole as well as for individual queues and departments. There is a tool which provides some visualiztion capabilties, but it's overly complicated for everyday use and for researchers who cannot dedicate time to understand all the intricacies.
 
 So, we're designing a simple and intuitive dashboard where researchers can view data relevant to them, their departments, or the institution as a whole.
 
