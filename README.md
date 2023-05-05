@@ -2,11 +2,11 @@
 
 This purpose of this project is to visualize the historical resource usage of the HPCF resources and predict the future usage. Our efforts focus on CPU, GPU, and memory utilization and prediction.
 
-The aim is to summarize historical data, provide useful forecasts of utilization, and ultimately to provide a dashboard which displays these results interactively. 
+The aim is to summarize historical data, provide useful forecasts of utilization, and ultimately to provide a dashboard which displays these results interactively. We provide: 
 
 - Historical usage trends.
-- Current usage of the cluster queues.
-- A prediction of future usage of the cluster queues.
+- Current usage statistics of the cluster queues.
+- A forecast/prediction of future usage to inform HPRC and users.
 
 # About this project
 
@@ -18,7 +18,7 @@ This project was built with:
 -	LSTM – AI, deep learning model for time-series data prediction
 -	R Shiny – R package for developing web applications
 
-# Pipeline
+# Preprocessing Pipeline
 
 This project changed from a data processing to a data engineering and reduction effort once we realized how large the data-set is. The following is an illustration of the tranformation and reduction of data that had to take place before we could start visualization and machine-learning efforts:
 
